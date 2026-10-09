@@ -1,0 +1,6 @@
+clinical_text,everyday_text,clinical_esi,everyday_esi,same_prediction,clinical_confidence,everyday_confidence
+Patient reports dyspnea and chest pain,I have chest pain and trouble breathing,1,1,True,0.5396702826752365,0.4512180406111973
+Acute unilateral arm weakness,Suddenly one of my arms became weak,1,1,True,0.412356696662466,0.6707946123210434
+Patient presents with emesis and abdominal pain,My stomach hurts and I keep throwing up,3,2,False,0.6651869409642646,0.41757144442026
+Persistent headache with nausea,I have had a headache and feel sick to my stomach,2,2,True,0.4755366065283108,0.4469061310402439
+Reports dizziness on standing,I feel lightheaded when I stand up,2,1,False,0.5090708913911269,0.3883993697163239
