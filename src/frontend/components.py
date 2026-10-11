@@ -8,8 +8,8 @@ from datetime import datetime
 # ─────────────────────────────────────────────
 @st.cache_resource
 def load_model():
-    """Load the trained baseline model (cached so it loads only once)."""
-    return joblib.load("models/baseline_model.pkl")
+    """Load the Demo 1 model (cached so it loads only once)."""
+    return joblib.load("models/demo1_model.pkl")
 
 
 # ─────────────────────────────────────────────
