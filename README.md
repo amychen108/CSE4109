@@ -25,7 +25,7 @@ If your copy is somewhere else, change that line in the first code cell.
 pip install -r requirements.txt
 ```
 
-`scikit-learn` is pinned to 1.6.1, the version the model was saved with. Other versions load it with a warning or may fail to load it.
+`scikit-learn` is pinned to 1.9.0, the version used to save the model used by the app. Other versions may load it with a warning or may fail during prediction.
 
 In VS Code, pick the Anaconda Python kernel (top-right of the notebook) so the installed packages are found.
 
