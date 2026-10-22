@@ -1,4 +1,5 @@
 import joblib
+import math
 import re
 import pandas as pd
 import streamlit as st
@@ -75,8 +76,8 @@ def select_model_name(has_demo, has_meds, has_vitals):
     return "m1"
 
 
-def parse_optional_vital(value, label, minimum, maximum, integer=False):
-    """Parse a blank-or-number vital field without native widget errors."""
+def parse_optional_vital(value, label):
+    """Parse a blank finite number while allowing unusual clinical values."""
     value = value.strip()
     if not value:
         return None, None
@@ -87,14 +88,11 @@ def parse_optional_vital(value, label, minimum, maximum, integer=False):
 
     try:
         number = float(value)
-        if integer and not number.is_integer():
-            return None, f"{label} must be a whole number."
-        number = int(number) if integer else number
     except ValueError:
         return None, f"{label} must contain numbers only."
 
-    if not minimum <= number <= maximum:
-        return None, f"{label} must be between {minimum} and {maximum}."
+    if not math.isfinite(number):
+        return None, f"{label} must be a finite number."
     return number, None
 
 
@@ -148,7 +146,8 @@ def predict_triage(inputs):
     row.update(extract_med_flags(meds))
 
     # Vitals + derived
-    row["temp"] = temp if temp is not None else 37.0
+    # The form accepts Fahrenheit; the model was trained on Celsius.
+    row["temp"] = ((temp - 32) * 5 / 9) if temp is not None else 37.0
     row["hr"]   = hr   if hr   is not None else 80
     row["rr"]   = rr   if rr   is not None else 16
     row["spo2"] = spo2 if spo2 is not None else 98
@@ -251,7 +250,7 @@ def render_form():
             st.caption("Leave any field blank if you do not know it.")
             c1, c2, c3 = st.columns(3)
             with c1:
-                st.markdown("<div style='height: 2.5rem; display: flex; align-items: center;'>Temperature (°C)</div>", unsafe_allow_html=True)
+                st.markdown("<div style='height: 2.5rem; display: flex; align-items: center;'>Temperature (°F)</div>", unsafe_allow_html=True)
                 temp = st.text_input("Temperature", label_visibility="collapsed", key="temperature_input")
                 st.markdown("<div style='height: 2.5rem; display: flex; align-items: center;'>Heart Rate (bpm)</div>", unsafe_allow_html=True)
                 hr = st.text_input("Heart Rate", label_visibility="collapsed", key="heart_rate_input")
@@ -276,12 +275,12 @@ def render_form():
             if not symptoms.strip():
                 st.error("Please describe your symptoms before submitting.")
             else:
-                temp, temp_error = parse_optional_vital(temp, "Temperature", 30, 45)
-                hr, hr_error = parse_optional_vital(hr, "Heart rate", 20, 250, integer=True)
-                rr, rr_error = parse_optional_vital(rr, "Respiratory rate", 4, 60, integer=True)
-                spo2, spo2_error = parse_optional_vital(spo2, "SpO₂", 50, 100, integer=True)
-                sbp, sbp_error = parse_optional_vital(sbp, "Systolic blood pressure", 40, 300, integer=True)
-                dbp, dbp_error = parse_optional_vital(dbp, "Diastolic blood pressure", 20, 200, integer=True)
+                temp, temp_error = parse_optional_vital(temp, "Temperature")
+                hr, hr_error = parse_optional_vital(hr, "Heart rate")
+                rr, rr_error = parse_optional_vital(rr, "Respiratory rate")
+                spo2, spo2_error = parse_optional_vital(spo2, "SpO₂")
+                sbp, sbp_error = parse_optional_vital(sbp, "Systolic blood pressure")
+                dbp, dbp_error = parse_optional_vital(dbp, "Diastolic blood pressure")
                 vital_errors = [
                     error for error in [
                         temp_error, hr_error, rr_error,
