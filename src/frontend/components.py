@@ -27,7 +27,7 @@ def load_models():
         except Exception as error:
             if name == "m1":
                 try:
-                    models[name] = joblib.load("models/demo1_model.pkl")
+                    models[name] = joblib.load("models/baseline_model.pkl")
                     st.warning(
                         "Personalized models are unavailable in this environment. "
                         "Using the text-only baseline model."
@@ -138,14 +138,16 @@ def predict_triage(inputs):
 
     df_row = pd.DataFrame([row])
 
-    # Predict
+    # Predict using the tabular feature schema expected by M2-M4.
     try:
         raw_pred = int(model.predict(df_row)[0])
         proba = model.predict_proba(df_row)[0]
-    except Exception:
-        # Fallback for legacy demo1_model.pkl (list input, LR labels 1–4)
-        raw_pred = int(model.predict([symptoms])[0])
-        proba = model.predict_proba([symptoms])[0]
+    except Exception as error:
+        st.error(
+            f"Model {model_name.upper()} could not process these inputs. "
+            "Please check that the deployed model and scikit-learn versions match."
+        )
+        return None
 
     # Demo 2 pipelines (ColumnTransformer) use XGBoost with 0-indexed labels
     is_demo2 = "prep" in model.named_steps
