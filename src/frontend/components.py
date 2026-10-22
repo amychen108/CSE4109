@@ -75,6 +75,29 @@ def select_model_name(has_demo, has_meds, has_vitals):
     return "m1"
 
 
+def parse_optional_vital(value, label, minimum, maximum, integer=False):
+    """Parse a blank-or-number vital field without native widget errors."""
+    value = value.strip()
+    if not value:
+        return None, None
+
+    numeric_pattern = r"^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$"
+    if not re.fullmatch(numeric_pattern, value):
+        return None, f"{label} must contain numbers only."
+
+    try:
+        number = float(value)
+        if integer and not number.is_integer():
+            return None, f"{label} must be a whole number."
+        number = int(number) if integer else number
+    except ValueError:
+        return None, f"{label} must contain numbers only."
+
+    if not minimum <= number <= maximum:
+        return None, f"{label} must be between {minimum} and {maximum}."
+    return number, None
+
+
 # ─────────────────────────────────────────────
 # Prediction
 # ─────────────────────────────────────────────
@@ -225,27 +248,23 @@ def render_form():
 
         # ── Optional: vitals ──
         with st.expander("🩺 Vital Signs (optional)"):
+            st.caption("Leave any field blank if you do not know it.")
             c1, c2, c3 = st.columns(3)
             with c1:
-                temp = st.number_input("Temperature (°C)", min_value=30.0,
-                                       max_value=45.0, value=None,
-                                                                             step=0.1)
-                hr = st.number_input("Heart Rate (bpm)", min_value=20,
-                                     max_value=250, value=None,
-                                                                         step=1)
+                st.markdown("<div style='height: 2.5rem; display: flex; align-items: center;'>Temperature (°C)</div>", unsafe_allow_html=True)
+                temp = st.text_input("Temperature", label_visibility="collapsed", key="temperature_input")
+                st.markdown("<div style='height: 2.5rem; display: flex; align-items: center;'>Heart Rate (bpm)</div>", unsafe_allow_html=True)
+                hr = st.text_input("Heart Rate", label_visibility="collapsed", key="heart_rate_input")
             with c2:
-                rr = st.number_input("Resp. Rate (breaths/min)", min_value=4,
-                                     max_value=60, value=None,
-                                                                         step=1)
-                spo2 = st.number_input("SpO₂ (%)", min_value=50, max_value=100,
-                                                                             value=None, step=1)
+                st.markdown("<div style='height: 2.5rem; display: flex; align-items: center;'>Resp. Rate<br>(breaths/min)</div>", unsafe_allow_html=True)
+                rr = st.text_input("Resp. Rate", label_visibility="collapsed", key="resp_rate_input")
+                st.markdown("<div style='height: 2.5rem; display: flex; align-items: center;'>SpO₂<br>(%)</div>", unsafe_allow_html=True)
+                spo2 = st.text_input("SpO₂", label_visibility="collapsed", key="spo2_input")
             with c3:
-                sbp = st.number_input("Systolic BP (mmHg)", min_value=40,
-                                      max_value=300, value=None,
-                                                                            step=1)
-                dbp = st.number_input("Diastolic BP (mmHg)", min_value=20,
-                                      max_value=200, value=None,
-                                                                            step=1)
+                st.markdown("<div style='height: 2.5rem; display: flex; align-items: center;'>Systolic BP (mmHg)</div>", unsafe_allow_html=True)
+                sbp = st.text_input("Systolic BP", label_visibility="collapsed", key="sbp_input")
+                st.markdown("<div style='height: 2.5rem; display: flex; align-items: center;'>Diastolic BP (mmHg)</div>", unsafe_allow_html=True)
+                dbp = st.text_input("Diastolic BP", label_visibility="collapsed", key="dbp_input")
 
         submitted = st.form_submit_button(
             "Get Triage Recommendation",
@@ -257,6 +276,22 @@ def render_form():
             if not symptoms.strip():
                 st.error("Please describe your symptoms before submitting.")
             else:
+                temp, temp_error = parse_optional_vital(temp, "Temperature", 30, 45)
+                hr, hr_error = parse_optional_vital(hr, "Heart rate", 20, 250, integer=True)
+                rr, rr_error = parse_optional_vital(rr, "Respiratory rate", 4, 60, integer=True)
+                spo2, spo2_error = parse_optional_vital(spo2, "SpO₂", 50, 100, integer=True)
+                sbp, sbp_error = parse_optional_vital(sbp, "Systolic blood pressure", 40, 300, integer=True)
+                dbp, dbp_error = parse_optional_vital(dbp, "Diastolic blood pressure", 20, 200, integer=True)
+                vital_errors = [
+                    error for error in [
+                        temp_error, hr_error, rr_error,
+                        spo2_error, sbp_error, dbp_error,
+                    ] if error
+                ]
+                if vital_errors:
+                    st.error("Please fix the vital signs: " + " ".join(vital_errors))
+                    return
+
                 inputs = {
                     "symptoms": symptoms.strip(),
                     "age": age, "gender": gender, "race": race,
